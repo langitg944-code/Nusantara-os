@@ -1,4 +1,4 @@
-# ☁️ Nusantara OS V2
+# ☁️ Nusantara OS V3
 **The Next-Gen Single-File Terminal Environment** *Developed by Langit - Built for Security & Aesthetics*
 
 Nusantara OS adalah sistem operasi berbasis terminal (wrapper) yang didesain untuk **Termux** dan **Linux Terminal**. Ringan, kencang, dan memiliki proteksi enkripsi tingkat tinggi.
