@@ -1,100 +1,109 @@
-import os, subprocess, sys, hashlib, getpass, time, socket
+import os, subprocess, sys, hashlib, getpass, time, socket, re
 from datetime import datetime
 
-# --- CONFIGURATION & SECURITY CORE ---
-VERSION = "V1.0-FINAL"
-CODENAME = "SKY-ARCH"
-# Default Key: admin (Ganti hash ini untuk custom password)
-MASTER_KEY = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
+# --- SYSTEM METADATA ---
+VERSION = "V2.0-FORTRESS"
+ENGINE = "SKY-SHIELD-V2"
 
 class NusantaraOS:
     def __init__(self):
+        self.config_file = ".nusa_vault"
         self.is_authenticated = False
-        self.session_start = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.blocked_chars = re.compile(r'[;&|`$]') # Anti-Injection Shield
 
     def clear(self):
-        os.system('cls' if os.name == 'nt' else 'clear')
+        os.system('clear' if os.name != 'nt' else 'cls')
 
-    def neon_banner(self):
+    def ui_banner(self):
         self.clear()
-        colors = ["\033[1;36m", "\033[1;35m", "\033[0m"]
-        print(f"""
-    {colors[0]}╔╗╔╦ ╦╔═╗╔═╗╔╗╔╔╦╗╔═╗╦═╗╔═╗  ╔═╗╔═╗  {colors[1]}██╗   ██╗ ██╗
-    {colors[0]}║║║║ ║╚═╗╠═╣║║║ ║ ╠═╣╠╦╝╠═╣  ║ ║╚═╗  {colors[1]}██║   ██║███║
-    {colors[0]}╝╚╝╚═╝╚═╝╩ ╩╝╚╝ ╩ ╩ ╩╩╚═╩ ╩  ╚═╝╚═╝  {colors[1]}╚██╗ ██╔╝╚██║
-                                         {colors[1]} ╚████╔╝  ██║
-    {colors[2]}─── \033[1;32mSECURE TERMINAL ENVIRONMENT\033[0m ───  {colors[1]}  ╚═══╝   ╚═╝\033[0m
-        """)
-        print(f"\033[1;30m[ BUILD: {VERSION} ] [ ENGINE: SKY-AI ] [ SESSION: {self.session_start} ]\033[0m\n")
+        print(f"\033[1;35m    _  _ _  _ ____ ____ _  _ ___ ____ ____ ____ \033[0m")
+        print(f"\033[1;36m    |\ | |  | [__  |__| |\ |  |  |__| |__/ |__| \033[0m")
+        print(f"\033[1;34m    | \| |__| ___] |  | | \|  |  |  | |  \ |  | \033[0m \033[1;31m[V2.0]\033[0m")
+        print(f"\033[1;30m    ────────────────────────────────────────────\033[0m")
+        print(f"    \033[1;32mSTATUS: SECURED\033[0m | \033[1;33mENGINE: {ENGINE}\033[0m\n")
 
-    def secure_boot(self):
-        self.neon_banner()
+    def setup_system(self):
+        """Meminta user membuat password baru saat pertama kali run"""
+        if not os.path.exists(self.config_file):
+            print("\033[1;33m[!] First Time Setup: Create your Master Key\033[0m")
+            new_key = getpass.getpass("Set New Master Key: ")
+            confirm_key = getpass.getpass("Confirm Master Key: ")
+            if new_key == confirm_key:
+                hashed = hashlib.sha256(new_key.encode()).hexdigest()
+                with open(self.config_file, "w") as f:
+                    f.write(hashed)
+                print("\033[1;32m[+] Vault Created Successfully!\033[0m")
+                time.sleep(1)
+            else:
+                print("\033[1;31m[-] Passwords do not match. System Exit.\033[0m")
+                sys.exit()
+
+    def secure_login(self):
+        self.setup_system()
+        self.ui_banner()
+        with open(self.config_file, "r") as f:
+            saved_hash = f.read().strip()
+            
         attempts = 0
         while attempts < 3:
-            key = getpass.getpass("\033[1;31m[!] ENTER SYSTEM KEY:\033[0m ")
-            if hashlib.sha256(key.encode()).hexdigest() == MASTER_KEY:
-                print("\033[1;32m[+] Authentication Bypass... Granted.\033[0m")
-                time.sleep(1)
-                self.is_authenticated = True
+            key = getpass.getpass("\033[1;31m[!] ENTER MASTER KEY:\033[0m ")
+            if hashlib.sha256(key.encode()).hexdigest() == saved_hash:
                 return True
             attempts += 1
             print(f"\033[1;31m[-] Access Denied. ({attempts}/3)\033[0m")
         
-        print("\033[1;41m[!!!] SECURITY BREACH: SELF-DESTRUCT INITIATED \033[0m")
-        # os.remove(__file__) # Aktifkan ini untuk benar-benar menghapus file jika salah pass
+        print("\033[1;41m [!] INTRUSION DETECTED: WIPING SESSION LOGS... \033[0m")
         sys.exit()
 
-    def vdp_scan(self, target):
-        """Simulasi Smart Scan untuk Bug Bounty / VDP"""
-        print(f"\033[1;34m[*] Initiating Nusantara-Scan on: {target}\033[0m")
-        common_ports = [21, 22, 80, 443, 8080]
-        for port in common_ports:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            socket.setdefaulttimeout(0.5)
-            result = s.connect_ex((target, port))
-            status = "\033[1;32mOPEN\033[0m" if result == 0 else "\033[1;31mCLOSED\033[0m"
-            print(f"    - Port {port}: {status}")
-            s.close()
+    def sanitize_input(self, cmd):
+        """Mencegah Command Injection (Balasan buat DeepSeek!)"""
+        if self.blocked_chars.search(cmd):
+            return False
+        return True
 
-    def main_loop(self):
-        self.neon_banner()
+    def run_scanner(self, target):
+        print(f"\033[1;34m[*] Probing {target} on Secure Ports...\033[0m")
+        for port in [21, 22, 80, 443, 3306, 8080]:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(0.7)
+                res = s.connect_ex((target, port))
+                status = "\033[1;32mOPEN\033[0m" if res == 0 else "\033[1;31mCLOSED\033[0m"
+                print(f"  > Port {port:4} : {status}")
+
+    def shell(self):
+        self.ui_banner()
         while True:
             try:
-                current_time = datetime.now().strftime("%H:%M")
-                path = os.getcwd().replace(os.path.expanduser("~"), "~")
+                current_dir = os.getcwd().replace(os.path.expanduser("~"), "~")
+                prompt = input(f"\033[1;36mNusantara\033[1;37m@\033[1;35mSky \033[1;30m[{current_dir}]\033[0m\n\033[1;32m$ \033[0m").strip()
                 
-                # Terminal Prompt Aesthetic
-                cmd = input(f"\033[1;35m{current_time} \033[1;36m\033[7;36m\033[1;30m Nusantara \033[0;36m \033[1;37m{path} \033[1;30m\n$ \033[0m").strip()
+                if not prompt: continue
+                if prompt.lower() in ["exit", "shutdown"]: break
 
-                if cmd.lower() in ["exit", "shutdown"]:
-                    print("\033[1;33m[!] Locking Vault... Goodbye.\033[0m")
-                    break
-                
-                if not cmd: continue
+                # Security Filter
+                if not self.sanitize_input(prompt):
+                    print("\033[1;31m[SHIELD] Execution Blocked: Dangerous characters detected.\033[0m")
+                    continue
 
-                # Custom Command Logic
-                parts = cmd.split()
-                if parts[0] == "scan" and len(parts) > 1:
-                    self.vdp_scan(parts[1])
-                elif parts[0] == "help":
-                    print("\033[1;37mCommands: \033[1;36mscan [target]\033[0m, \033[1;36msys-info\033[0m, \033[1;36mclear\033[0m, \033[1;36mexit\033[0m")
-                elif parts[0] == "sys-info":
-                    print(f"\033[1;35mOS:\033[0m Nusantara OS {VERSION}")
-                    print(f"\033[1;35mKERNEL:\033[0m {CODENAME}")
-                    print(f"\033[1;35mSHELL:\033[0m Python-Nusantara-Shell")
+                args = prompt.split()
+                if args[0] == "scan" and len(args) > 1:
+                    self.run_scanner(args[1])
+                elif args[0] == "help":
+                    print("\033[1;37mNative: scan, help, exit, clear, sys-info\033[0m")
+                elif args[0] == "sys-info":
+                    print(f"Build: {VERSION}\nEngine: {ENGINE}\nSecurity: Shield-Active")
+                elif args[0] == "cd":
+                    try: os.chdir(args[1] if len(args) > 1 else os.path.expanduser("~"))
+                    except: print("Path not found.")
                 else:
-                    # Jalankan perintah system (ls, cd, git, dll)
-                    if parts[0] == "cd" and len(parts) > 1:
-                        try: os.chdir(parts[1])
-                        except: print("Directory not found.")
-                    else:
-                        subprocess.run(cmd, shell=True)
+                    # Menjalankan command sistem asli dengan aman
+                    subprocess.run(args) # Pakai list args (shell=False) biar aman dari injection!
 
             except KeyboardInterrupt:
-                print("\n\033[1;33m[!] Locked. Use 'exit' to quit.\033[0m")
+                print("\n\033[1;33m[!] Use 'exit' to logout.\033[0m")
 
 if __name__ == "__main__":
     os_sys = NusantaraOS()
-    if os_sys.secure_boot():
-        os_sys.main_loop()
+    if os_sys.secure_login():
+        os_sys.shell()
         
