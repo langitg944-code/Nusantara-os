@@ -5,10 +5,11 @@ import re
 import shlex
 import subprocess
 import sys
+import threading
 import time
 
 # --- SYSTEM METADATA ---
-VERSION = "V4.0-SHORTCUTS"
+VERSION = "V4.1-QUIET"
 ENGINE = "SKY-SHIELD-ULTRA"
 
 
@@ -20,9 +21,9 @@ class NusantaraOS:
     SHORTCUTS = {
         # --- Paket & sistem ---
         "u": (("pkg", "update"), "Update daftar paket Termux"),
-        "ug": (("pkg", "upgrade"), "Upgrade semua paket Termux"),
+        "ug": (("pkg", "upgrade", "-y"), "Upgrade semua paket Termux"),
         "up": (None, "Update lalu upgrade paket Termux"),
-        "i": (("pkg", "install"), "Install paket: i <nama-paket>"),
+        "i": (("pkg", "install", "-y"), "Install paket: i <nama-paket>"),
         "un": (("pkg", "uninstall"), "Hapus paket: un <nama-paket>"),
         "s": (("pkg", "search"), "Cari paket: s <kata-kunci>"),
         "li": (("pkg", "list-installed"), "Tampilkan paket yang terpasang"),
@@ -80,9 +81,19 @@ class NusantaraOS:
     # Shortcut yang argumennya digabung menjadi satu nilai.
     JOINED_ARG_SHORTCUTS = {"clip", "n", "gc", "tts"}
 
+    # Shortcut yang dijalankan dalam Quiet Mode: output ditahan, hanya
+    # satu baris spinner yang tampil di layar.
+    QUIET_SHORTCUTS = {"u", "ug", "up", "i", "un", "pi"}
+
+    # Frame spinner braille. Halus, kecil, dan tidak menggeser baris.
+    SPINNER_FRAMES = "\u280b\u2819\u2839\u2838\u283c\u2834\u2826\u2827\u2807\u280f"
+    SPINNER_INTERVAL = 0.08
+
     def __init__(self):
         self.config_file = ".nusa_vault"
         self.is_authenticated = False
+        self.last_output = []
+        self.last_label = ""
         # Shell control characters are rejected. Commands are executed with
         # shell=False, so normal arguments and quoted text remain usable.
         self.blocked_chars = re.compile(r"[;&|`$()<\n\r]")
@@ -96,7 +107,7 @@ class NusantaraOS:
         print("\033[1;36m    |\\ | |  | [__  |__| |\\ |  |  |__| |__/ |__| \033[0m")
         print("\033[1;34m    | \\| |__| ___] |  | | \\|  |  |  | |  \\ |  | \033[0m \033[1;31m[GHOST-V4]\033[0m")
         print("\033[1;30m    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\033[0m")
-        print("    \033[1;31mMODE: GHOST\033[0m | \033[1;32mENCRYPTION: SHA-256\033[0m\n")
+        print("    \033[1;31mMODE: GHOST\033[0m | \033[1;32mENCRYPTION: SHA-256\033[0m | \033[1;36mQUIET: ON\033[0m\n")
 
     def self_destruct(self):
         """MENGHAPUS SEMUA JEJAK SISTEM"""
@@ -155,13 +166,25 @@ class NusantaraOS:
                 }[shortcut]
             else:
                 target = " ".join(command)
-            print(f"{shortcut:<8}{target:<36}{description}")
-        print("\nCommand lain tetap bisa dijalankan seperti biasa.")
+            marker = " \u25cf" if shortcut in self.QUIET_SHORTCUTS else ""
+            print(f"{shortcut:<8}{target:<36}{description}{marker}")
+        print("\n\u25cf = Quiet Mode: output disembunyikan, diganti satu baris spinner.")
+        print("   Ketik 'log' untuk membaca output lengkap command terakhir.")
+        print("Command lain tetap bisa dijalankan seperti biasa.")
         print("Termux API (o, url, sh, clip, paste, n, v, cam, loc, wifi, bat, tts, stor)")
         print("membutuhkan Termux:API.")
 
     def show_system_info(self):
         print(f"OS: Nusantara Ghost\nVersion: {VERSION}\nIntegrity: Verified")
+
+    def show_last_log(self):
+        if not self.last_output:
+            print("\033[1;30mBelum ada output yang tersimpan.\033[0m")
+            return
+        print(f"\n\033[1;30m--- output: {self.last_label} ---\033[0m")
+        for line in self.last_output:
+            print(line)
+        print(f"\033[1;30m--- {len(self.last_output)} baris ---\033[0m")
 
     @staticmethod
     def _usage_for(shortcut):
@@ -196,6 +219,104 @@ class NusantaraOS:
         }
         return usages.get(shortcut)
 
+    @staticmethod
+    def _quiet_label(shortcut, extra_args):
+        target = " ".join(extra_args)
+        labels = {
+            "u": "Memperbarui daftar paket",
+            "ug": "Meng-upgrade paket",
+            "i": f"Memasang {target}",
+            "un": f"Menghapus {target}",
+            "pi": f"Memasang library {target}",
+        }
+        return labels.get(shortcut, shortcut)
+
+    @staticmethod
+    def _drain(stream, sink):
+        """Baca output command ke dalam buffer, bukan ke layar."""
+        try:
+            for line in stream:
+                sink.append(line.rstrip("\n"))
+        except (ValueError, OSError):
+            pass
+
+    def run_quiet(self, command, label):
+        """Jalankan command dengan satu baris spinner, tanpa membanjiri layar."""
+        # Di luar terminal interaktif, animasi dimatikan agar aman untuk pipe.
+        if not sys.stdout.isatty():
+            return self.run_external(command)
+
+        try:
+            process = subprocess.Popen(
+                command,
+                shell=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                stdin=subprocess.DEVNULL,
+                text=True,
+                errors="replace",
+                bufsize=1,
+            )
+        except FileNotFoundError:
+            print(f"\033[1;31m\u2718  Command tidak ditemukan: {command[0]}\033[0m")
+            return 1
+        except OSError as error:
+            print(f"\033[1;31m\u2718  Gagal menjalankan command: {error}\033[0m")
+            return 1
+
+        buffer = []
+        reader = threading.Thread(
+            target=self._drain, args=(process.stdout, buffer), daemon=True
+        )
+        reader.start()
+
+        start = time.time()
+        index = 0
+        interrupted = False
+        try:
+            while process.poll() is None:
+                frame = self.SPINNER_FRAMES[index % len(self.SPINNER_FRAMES)]
+                elapsed = int(time.time() - start)
+                sys.stdout.write(
+                    f"\r\033[2K\033[1;36m{frame}\033[0m  {label} "
+                    f"\033[1;30m\u00b7 {elapsed}s\033[0m"
+                )
+                sys.stdout.flush()
+                index += 1
+                time.sleep(self.SPINNER_INTERVAL)
+        except KeyboardInterrupt:
+            interrupted = True
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+
+        reader.join(timeout=2)
+        duration = time.time() - start
+        sys.stdout.write("\r\033[2K")
+        sys.stdout.flush()
+
+        self.last_output = buffer
+        self.last_label = label
+
+        if interrupted:
+            print(f"\033[1;33m\u25cb  Dibatalkan\033[0m \033[1;30m\u00b7 {label}\033[0m")
+            return 130
+
+        code = process.returncode
+        if code == 0:
+            print(
+                f"\033[1;32m\u2714\033[0m  {label} "
+                f"\033[1;30m\u00b7 {duration:.1f}s\033[0m"
+            )
+        else:
+            print(f"\033[1;31m\u2718  Gagal\033[0m \033[1;30m\u00b7 exit {code}\033[0m")
+            for line in [entry for entry in buffer if entry.strip()][-5:]:
+                print(f"   \033[1;30m{line}\033[0m")
+            print("   \033[1;30mKetik 'log' untuk output lengkap.\033[0m")
+        return code
+
     def execute_shortcut(self, shortcut, extra_args):
         """Expand and execute one of the built-in shortcuts."""
         usage = self._usage_for(shortcut)
@@ -215,9 +336,9 @@ class NusantaraOS:
             self.clear()
             return
         if shortcut == "up":
-            update_status = self.run_external(["pkg", "update"])
-            if update_status == 0:
-                self.run_external(["pkg", "upgrade"])
+            status = self.run_quiet(["pkg", "update"], "Memperbarui daftar paket")
+            if status == 0:
+                self.run_quiet(["pkg", "upgrade", "-y"], "Meng-upgrade paket")
             return
 
         command = list(self.SHORTCUTS[shortcut][0])
@@ -228,6 +349,10 @@ class NusantaraOS:
                 command[1:1] = ["--content"]
         else:
             command.extend(extra_args)
+
+        if shortcut in self.QUIET_SHORTCUTS:
+            self.run_quiet(command, self._quiet_label(shortcut, extra_args))
+            return
         self.run_external(command)
 
     def _split_redirection(self, args):
@@ -309,6 +434,9 @@ class NusantaraOS:
                     break
                 if command_name in {"help", "shortcuts"}:
                     self.show_help()
+                    continue
+                if command_name == "log":
+                    self.show_last_log()
                     continue
                 if command_name == "cd":
                     target = os.path.expanduser(extra_args[0]) if extra_args else os.path.expanduser("~")
