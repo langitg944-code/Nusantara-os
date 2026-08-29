@@ -10,7 +10,7 @@
 
 **Satu file Python. Lima puluh shortcut. Nol dependensi.**
 
-![version](https://img.shields.io/badge/version-V4.0--SHORTCUTS-black?style=flat-square)
+![version](https://img.shields.io/badge/version-V4.1--QUIET-black?style=flat-square)
 ![python](https://img.shields.io/badge/python-3.7%2B-blue?style=flat-square)
 ![platform](https://img.shields.io/badge/platform-Termux%20%7C%20Linux-green?style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square)
@@ -23,7 +23,7 @@
 
 > Terminal di layar 6 inci itu ruang sempit.
 > Nusantara OS memampatkan command panjang jadi satu-dua huruf,
-> tanpa mengorbankan keamanan dan tanpa menambah satu pun dependensi.
+> lalu menahan output yang tidak perlu supaya layar tetap bersih.
 
 Nusantara OS adalah **wrapper terminal berbasis Python** untuk **Termux** dan Linux. Ia berdiri di antara kamu dan shell: menerima command pendek, mengembangkannya menjadi command penuh, lalu menjalankannya secara aman tanpa `shell=True`.
 
@@ -35,10 +35,46 @@ Nusantara OS adalah **wrapper terminal berbasis Python** untuk **Termux** dan Li
 |---|---|
 | **Single-File Architecture** | Satu file `nusantara.py`. Tanpa `requirements.txt`, tanpa `pip install`. |
 | **50 Command Shortcuts** | Paket, Python, Git, file, jaringan, dan Termux API — semua dipangkas. |
+| **Quiet Mode** | Command paket berjalan di balik satu baris spinner. Layar tidak dibanjiri log. |
 | **Ghost Vault** | Master key di-hash SHA-256. Salah 3 kali → self-destruct. |
 | **Ghost Shield** | Karakter kontrol shell ditolak di pintu masuk. |
 | **Safe Command Runner** | Semua eksekusi lewat `subprocess` dengan `shell=False`. |
 | **Hyper-Aesthetic UI** | Banner neon, prompt ala Powerline, indikator path live. |
+
+---
+
+## ▸ Quiet Mode
+
+Biasanya `pkg update` memuntahkan puluhan baris `Get:1 ... Hit:2 ...` sampai layar penuh. Di Nusantara OS, output itu ditahan dan diganti **satu baris hidup** yang berputar di tempat:
+
+```
+⠹  Memperbarui daftar paket · 4s
+```
+
+Selesai, baris itu diganti ringkasan:
+
+```
+✔  Memperbarui daftar paket · 6.2s
+```
+
+Kalau gagal, hanya 5 baris error terakhir yang ditampilkan:
+
+```
+✘  Gagal · exit 100
+   E: Unable to locate package xyz
+   Ketik 'log' untuk output lengkap.
+```
+
+**Cara kerjanya:**
+
+- Spinner memakai frame braille `⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏`, berputar tiap 0,08 detik di baris yang sama — tidak pernah menggeser layar ke bawah.
+- Aktif untuk shortcut bertanda `●` di menu `h`: **`u` `ug` `up` `i` `un` `pi`**.
+- `up` berjalan dua fase berurutan: *Memperbarui daftar paket* → *Meng-upgrade paket*.
+- Output penuh tetap disimpan. Ketik **`log`** kapan saja untuk membacanya.
+- Tekan **Ctrl+C** untuk membatalkan — proses dihentikan rapi, ditandai `○ Dibatalkan`.
+- Kalau output di-pipe atau bukan terminal interaktif, spinner otomatis mati dan command berjalan normal. Aman dipakai di dalam script.
+
+Shortcut lain — `gcl`, `w`, `run`, `gp` — sengaja **tidak** di-quiet, karena progress bawaannya justru berguna untuk dilihat.
 
 ---
 
@@ -74,19 +110,21 @@ Setelah masuk, ketik `h` untuk memanggil daftar lengkap 50 shortcut langsung dar
 
 ## ▸ Kamus Shortcut
 
+> Tanda `●` = berjalan dalam Quiet Mode.
+
 ### Paket & Sistem
 
 | Shortcut | Menjadi | Contoh |
 |---|---|---|
-| `u` | `pkg update` | `u` |
-| `ug` | `pkg upgrade` | `ug` |
-| `up` | `pkg update` + `pkg upgrade` | `up` |
-| `i` | `pkg install` | `i git` |
-| `un` | `pkg uninstall` | `un git` |
+| `u` ● | `pkg update` | `u` |
+| `ug` ● | `pkg upgrade -y` | `ug` |
+| `up` ● | `pkg update` + `pkg upgrade` | `up` |
+| `i` ● | `pkg install -y` | `i git` |
+| `un` ● | `pkg uninstall` | `un git` |
 | `s` | `pkg search` | `s python` |
 | `li` | `pkg list-installed` | `li` |
 | `py` | `python` | `py --version` |
-| `pi` | `pip install` | `pi requests` |
+| `pi` ● | `pip install` | `pi requests` |
 | `run` | `python` | `run bot.py` |
 | `c` | `clear` | `c` |
 | `h` | `help` | `h` |
@@ -153,6 +191,18 @@ Setelah masuk, ketik `h` untuk memanggil daftar lengkap 50 shortcut langsung dar
 
 ---
 
+## ▸ Command Tambahan
+
+| Command | Fungsi |
+|---|---|
+| `log` | Tampilkan output lengkap command Quiet Mode terakhir |
+| `cd` | Pindah direktori |
+| `sys-info` | Info sistem dan versi |
+| `help` | Sama dengan `h` |
+| `exit` | Keluar |
+
+---
+
 ## ▸ Catatan Keamanan
 
 - **Tanpa shell.** Command dieksekusi dengan `shell=False`, jadi injeksi lewat karakter kontrol tidak punya jalan masuk.
@@ -170,7 +220,11 @@ Shortcut bukan penjara. Command apa pun yang tidak terdaftar tetap diteruskan ke
 
 ## ▸ Kontribusi
 
-Pull request dan issue terbuka. Tambahkan shortcut baru di dict `SHORTCUTS`, dan jika argumennya harus digabung jadi satu kalimat, daftarkan namanya di `JOINED_ARG_SHORTCUTS`.
+Pull request dan issue terbuka.
+
+- Shortcut baru → tambahkan di dict `SHORTCUTS`.
+- Argumen harus digabung jadi satu kalimat → daftarkan di `JOINED_ARG_SHORTCUTS`.
+- Ingin command berjalan senyap dengan spinner → daftarkan di `QUIET_SHORTCUTS`.
 
 ---
 
