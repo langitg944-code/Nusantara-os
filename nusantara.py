@@ -8,16 +8,17 @@ import sys
 import time
 
 # --- SYSTEM METADATA ---
-VERSION = "V3.1-SHORTCUTS"
+VERSION = "V4.0-SHORTCUTS"
 ENGINE = "SKY-SHIELD-ULTRA"
 
 
 class NusantaraOS:
     """A small terminal wrapper with Termux-friendly shortcuts."""
 
-    # Exactly 25 shortcuts. The first word of a shortcut is intentionally
+    # Exactly 50 shortcuts. The first word of a shortcut is intentionally
     # short, while its expansion can be a longer Termux command.
     SHORTCUTS = {
+        # --- Paket & sistem ---
         "u": (("pkg", "update"), "Update daftar paket Termux"),
         "ug": (("pkg", "upgrade"), "Upgrade semua paket Termux"),
         "up": (None, "Update lalu upgrade paket Termux"),
@@ -29,10 +30,11 @@ class NusantaraOS:
         "pi": (("pip", "install"), "Install library Python: pi <nama-library>"),
         "run": (("python",), "Jalankan file Python: run <file.py>"),
         "c": (("clear",), "Bersihkan layar"),
-        "h": (None, "Tampilkan bantuan dan 25 shortcut"),
+        "h": (None, "Tampilkan bantuan dan 50 shortcut"),
         "q": (None, "Keluar dari Nusantara OS"),
         "si": (None, "Tampilkan informasi sistem"),
         "la": (("ls", "-lah"), "Tampilkan semua file secara detail"),
+        # --- Termux API ---
         "o": (("termux-open",), "Buka file: o <file>"),
         "url": (("termux-open-url",), "Buka URL: url <alamat>"),
         "sh": (("termux-share",), "Bagikan file: sh <file>"),
@@ -43,8 +45,40 @@ class NusantaraOS:
         "cam": (("termux-camera-photo",), "Ambil foto: cam <output.jpg>"),
         "loc": (("termux-location",), "Ambil lokasi perangkat"),
         "wifi": (("termux-wifi-connectioninfo",), "Tampilkan info koneksi Wi-Fi"),
+        # --- Git ---
+        "g": (("git",), "Jalankan git: g <argumen>"),
+        "gs": (("git", "status", "-sb"), "Status repo secara ringkas"),
+        "ga": (("git", "add"), "Tambahkan file ke stage: ga <file>"),
+        "gc": (("git", "commit", "-m"), "Commit perubahan: gc <pesan>"),
+        "gp": (("git", "push"), "Push ke remote"),
+        "gl": (("git", "log", "--oneline", "-10"), "10 commit terakhir"),
+        "gd": (("git", "diff"), "Lihat perubahan: gd <file>"),
+        "gcl": (("git", "clone"), "Clone repo: gcl <url>"),
+        # --- File & folder ---
+        "e": (("nano",), "Edit file: e <file>"),
+        "ct": (("cat",), "Tampilkan isi file: ct <file>"),
+        "mk": (("mkdir", "-p"), "Buat folder: mk <nama-folder>"),
+        "del": (("rm", "-i"), "Hapus file dengan konfirmasi: del <file>"),
+        "cpy": (("cp", "-r"), "Salin file/folder: cpy <asal> <tujuan>"),
+        "mvf": (("mv",), "Pindah atau rename: mvf <asal> <tujuan>"),
+        "f": (("find", ".", "-name"), "Cari file: f <pola>"),
+        "gr": (("grep", "-rn"), "Cari teks di file: gr <kata> <lokasi>"),
+        "z": (("unzip",), "Ekstrak arsip zip: z <file.zip>"),
+        "tz": (("tar", "-xzvf"), "Ekstrak arsip tar.gz: tz <file.tar.gz>"),
+        # --- Disk & jaringan ---
+        "d": (("df", "-h"), "Tampilkan sisa ruang penyimpanan"),
+        "w": (("wget",), "Unduh file: w <url>"),
+        "cu": (("curl", "-L"), "Ambil data dari URL: cu <url>"),
+        "myip": (("curl", "-s", "https://ifconfig.me"), "Tampilkan IP publik"),
+        # --- Perangkat ---
+        "bat": (("termux-battery-status",), "Tampilkan status baterai"),
+        "tts": (("termux-tts-speak",), "Ucapkan teks: tts <kalimat>"),
+        "stor": (("termux-setup-storage",), "Aktifkan akses storage Termux"),
     }
-    SHORTCUT_COUNT = 25
+    SHORTCUT_COUNT = 50
+
+    # Shortcut yang argumennya digabung menjadi satu nilai.
+    JOINED_ARG_SHORTCUTS = {"clip", "n", "gc", "tts"}
 
     def __init__(self):
         self.config_file = ".nusa_vault"
@@ -60,8 +94,8 @@ class NusantaraOS:
         self.clear()
         print("\033[1;35m    _  _ _  _ ____ ____ _  _ ___ ____ ____ ____ \033[0m")
         print("\033[1;36m    |\\ | |  | [__  |__| |\\ |  |  |__| |__/ |__| \033[0m")
-        print("\033[1;34m    | \\| |__| ___] |  | | \\|  |  |  | |  \\ |  | \033[0m \033[1;31m[GHOST-V3]\033[0m")
-        print("\033[1;30m    ────────────────────────────────────────────\033[0m")
+        print("\033[1;34m    | \\| |__| ___] |  | | \\|  |  |  | |  \\ |  | \033[0m \033[1;31m[GHOST-V4]\033[0m")
+        print("\033[1;30m    \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\033[0m")
         print("    \033[1;31mMODE: GHOST\033[0m | \033[1;32mENCRYPTION: SHA-256\033[0m\n")
 
     def self_destruct(self):
@@ -107,7 +141,7 @@ class NusantaraOS:
 
     def show_help(self):
         print("\nNusantara OS - command shortcuts")
-        print("Ketik shortcut lalu argumennya. Total shortcut: 25\n")
+        print(f"Ketik shortcut lalu argumennya. Total shortcut: {self.SHORTCUT_COUNT}\n")
         print(f"{'CMD':<8}{'MENJADI':<36}KETERANGAN")
         print("-" * 80)
         for shortcut, (command, description) in self.SHORTCUTS.items():
@@ -123,7 +157,8 @@ class NusantaraOS:
                 target = " ".join(command)
             print(f"{shortcut:<8}{target:<36}{description}")
         print("\nCommand lain tetap bisa dijalankan seperti biasa.")
-        print("Termux API (o, url, sh, clip, paste, n, v, cam, loc, wifi) membutuhkan Termux:API.")
+        print("Termux API (o, url, sh, clip, paste, n, v, cam, loc, wifi, bat, tts, stor)")
+        print("membutuhkan Termux:API.")
 
     def show_system_info(self):
         print(f"OS: Nusantara Ghost\nVersion: {VERSION}\nIntegrity: Verified")
@@ -142,11 +177,27 @@ class NusantaraOS:
             "clip": "Pemakaian: clip <teks>",
             "n": "Pemakaian: n <pesan>",
             "cam": "Pemakaian: cam <output.jpg>",
+            "ga": "Pemakaian: ga <file>",
+            "gc": "Pemakaian: gc <pesan-commit>",
+            "gcl": "Pemakaian: gcl <url-repo>",
+            "e": "Pemakaian: e <file>",
+            "ct": "Pemakaian: ct <file>",
+            "mk": "Pemakaian: mk <nama-folder>",
+            "del": "Pemakaian: del <file>",
+            "cpy": "Pemakaian: cpy <asal> <tujuan>",
+            "mvf": "Pemakaian: mvf <asal> <tujuan>",
+            "f": "Pemakaian: f <pola-nama-file>",
+            "gr": "Pemakaian: gr <kata> <lokasi>",
+            "z": "Pemakaian: z <file.zip>",
+            "tz": "Pemakaian: tz <file.tar.gz>",
+            "w": "Pemakaian: w <url>",
+            "cu": "Pemakaian: cu <url>",
+            "tts": "Pemakaian: tts <kalimat>",
         }
         return usages.get(shortcut)
 
     def execute_shortcut(self, shortcut, extra_args):
-        """Expand and execute one of the 25 built-in shortcuts."""
+        """Expand and execute one of the built-in shortcuts."""
         usage = self._usage_for(shortcut)
         if usage and not extra_args:
             print(usage)
@@ -170,8 +221,8 @@ class NusantaraOS:
             return
 
         command = list(self.SHORTCUTS[shortcut][0])
-        if shortcut in {"clip", "n"}:
-            # These Termux API commands expect the message as one value.
+        if shortcut in self.JOINED_ARG_SHORTCUTS:
+            # These commands expect the message as one single value.
             command.append(" ".join(extra_args))
             if shortcut == "n":
                 command[1:1] = ["--content"]
@@ -226,7 +277,7 @@ class NusantaraOS:
 
     def shell(self):
         self.ui_banner()
-        print("Ketik 'h' untuk melihat 25 shortcut Nusantara OS.\n")
+        print(f"Ketik 'h' untuk melihat {self.SHORTCUT_COUNT} shortcut Nusantara OS.\n")
         while True:
             try:
                 path = os.getcwd().replace(os.path.expanduser("~"), "~")
