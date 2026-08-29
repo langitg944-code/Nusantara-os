@@ -15,7 +15,7 @@
 ![platform](https://img.shields.io/badge/platform-Termux%20%7C%20Linux-green?style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square)
 
-*Dikembangkan oleh Langit \u2014 built for speed, security & aesthetics*
+*Dikembangkan oleh Langit — built for speed, security & aesthetics*
 
 </div>
 
@@ -29,20 +29,20 @@ Nusantara OS adalah **wrapper terminal berbasis Python** untuk **Termux** dan Li
 
 ---
 
-## \u25b8 Sorotan Fitur
+## ▸ Sorotan Fitur
 
-| | |
+| Fitur | Keterangan |
 |---|---|
 | **Single-File Architecture** | Satu file `nusantara.py`. Tanpa `requirements.txt`, tanpa `pip install`. |
-| **50 Command Shortcuts** | Paket, Python, Git, file, jaringan, dan Termux API \u2014 semua dipangkas. |
-| **Ghost Vault** | Master key di-hash SHA-256. Salah 3 kali \u2192 self-destruct. |
-| **Ghost Shield** | Karakter shell berbahaya (`;` `&` <code>&#124;</code> `` ` `` `$` `(` `)` `<`) ditolak di pintu masuk. |
+| **50 Command Shortcuts** | Paket, Python, Git, file, jaringan, dan Termux API — semua dipangkas. |
+| **Ghost Vault** | Master key di-hash SHA-256. Salah 3 kali → self-destruct. |
+| **Ghost Shield** | Karakter kontrol shell ditolak di pintu masuk. |
 | **Safe Command Runner** | Semua eksekusi lewat `subprocess` dengan `shell=False`. |
 | **Hyper-Aesthetic UI** | Banner neon, prompt ala Powerline, indikator path live. |
 
 ---
 
-## \u25b8 Instalasi
+## ▸ Instalasi
 
 Satu baris, langsung jalan:
 
@@ -60,19 +60,19 @@ lalu install aplikasi **Termux:API** dari F-Droid.
 
 ---
 
-## \u25b8 Alur Login
+## ▸ Alur Login
 
 ```
-[1] Run pertama   \u2192 GHOST INITIALIZATION \u2192 buat Master Key
-[2] Run berikutnya \u2192 ENTER KEY
-[3] Salah 3x       \u2192 PURGE: vault + script dihapus permanen
+[1] Run pertama    → GHOST INITIALIZATION → buat Master Key
+[2] Run berikutnya  → ENTER KEY
+[3] Salah 3x        → PURGE: vault + script dihapus permanen
 ```
 
 Setelah masuk, ketik `h` untuk memanggil daftar lengkap 50 shortcut langsung dari dalam aplikasi.
 
 ---
 
-## \u25b8 Kamus Shortcut
+## ▸ Kamus Shortcut
 
 ### Paket & Sistem
 
@@ -153,33 +153,33 @@ Setelah masuk, ketik `h` untuk memanggil daftar lengkap 50 shortcut langsung dar
 
 ---
 
-## \u25b8 Catatan Keamanan
+## ▸ Catatan Keamanan
 
-- **Tanpa shell.** Command dieksekusi dengan `shell=False`, jadi injeksi lewat `;` atau `&&` tidak punya jalan masuk.
+- **Tanpa shell.** Command dieksekusi dengan `shell=False`, jadi injeksi lewat karakter kontrol tidak punya jalan masuk.
 - **Filter karakter.** Input yang mengandung karakter kontrol shell langsung ditolak `GHOST-SHIELD`.
 - **Redirection terbatas.** Hanya satu `>` atau `>>` di akhir baris yang diizinkan.
 - **Self-destruct itu nyata.** Tiga kali salah key akan menghapus `.nusa_vault` **dan** file script itu sendiri. Simpan cadangan jika perlu.
 
 ---
 
-## \u25b8 Command di Luar Kamus
+## ▸ Command di Luar Kamus
 
-Shortcut bukan penjara. Command apa pun yang tidak terdaftar tetap diteruskan ke sistem seperti biasa \u2014 `cd`, `ls`, `ping`, `nano`, semuanya jalan. Nusantara OS hanya memotong yang sering kamu ketik.
+Shortcut bukan penjara. Command apa pun yang tidak terdaftar tetap diteruskan ke sistem seperti biasa — `cd`, `ls`, `ping`, `nano`, semuanya jalan. Nusantara OS hanya memotong yang sering kamu ketik.
 
 ---
 
-## \u25b8 Kontribusi
+## ▸ Kontribusi
 
 Pull request dan issue terbuka. Tambahkan shortcut baru di dict `SHORTCUTS`, dan jika argumennya harus digabung jadi satu kalimat, daftarkan namanya di `JOINED_ARG_SHORTCUTS`.
 
 ---
 
-## \u25b8 Lisensi
+## ▸ Lisensi
 
-MIT \u2014 lihat [LICENSE](LICENSE).
+MIT — lihat [LICENSE](LICENSE).
 
 <div align="center">
 
-**Nusantara OS** \u00b7 *Sistem Termux yang dibuat mudah* \U0001f49b
+**Nusantara OS** · *Sistem Termux yang dibuat mudah* 💛
 
 </div>
